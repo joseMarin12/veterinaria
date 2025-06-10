@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administrador de citas</title>
+  <link rel="stylesheet" href="ss.css" />
+</head>
+<body>
+
+  <!-- Encabezado -->
+  <header class="header">
+    <h1 class="titulo">Administrador de citas</h1>
+    <button id="btnAgregarCita" class="btn-agregar">AGREGAR CITA</button>
+  </header>
+
+  <!-- Filtro -->
+  <section class="filtro">
+    <label for="estadoFiltro">Filtrar por estado</label>
+    <select id="estadoFiltro">
+      <option value="Abierta">Abierta</option>
+      <option value="Terminada">Terminada</option>
+      <option value="Anulada">Anulada</option>
+    </select>
+  </section>
+
+  <!-- Búsqueda -->
+  <section class="busqueda">
+    <label for="inputBusqueda">Buscar por mascota o propietario</label>
+    <input type="text" id="inputBusqueda" placeholder="Ej: Max o Juan Pérez" />
+  </section>
+
+  <!-- Línea verde -->
+  <hr class="linea-verde" />
+
+  <!-- Contenedor de tarjetas -->
+  <main id="citasContainer"></main>
+
+  <!-- Modal para guardar nueva cita -->
+  <div id="modalCita" class="modal hidden">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h2>Guardar nueva cita</h2>
+        <span class="close-modal" id="cerrarModal">&times;</span>
+      </header>
+      <form id="formCita" class="formulario-cita">
+        <input type="text" id="nombreMascota" placeholder="Nombre Mascota" required />
+        <input type="text" id="nombrePropietario" placeholder="Nombre Propietario" required />
+        <input type="tel" id="telefono" placeholder="Teléfono" required />
+        <input type="date" id="fecha" required />
+        <input type="time" id="hora" required />
+        <select id="tipoMascota" required>
+          <option value="">Tipo de mascota</option>
+          <option value="Perro">Perro</option>
+          <option value="Gato">Gato</option>
+          <option value="Ave">Ave</option>
+          <option value="Conejo">Conejo</option>
+          <option value="Panda">Panda</option>
+          <option value="Pez">Pez</option>
+          <option value="Iguana">Iguana</option>
+          <option value="Tortuga">Tortuga</option>
+          <option value="Caballo">Caballo</option>
+          <option value="Otro">Otro</option>
+        </select>
+        <textarea id="sintomas" placeholder="Síntomas" maxlength="400" required></textarea>
+
+        <label for="estado"></label>
+        <select id="estado" required>
+          <option value="">Seleccionar estado...</option>
+          <option value="Abierta">Abierta</option>
+          <option value="Terminada">Terminada</option>
+          <option value="Anulada">Anulada</option>
+        </select>
+
+        <div class="modal-actions">
+          <button type="button" id="cerrarBtn" class="cerrar">CERRAR</button>
+          <button type="submit" class="guardar">GUARDAR</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Todos los derechos reservados</p>
+  </footer>
+
+  <!-- Script funcionalidad -->
+  <script>
+    const btnAgregarCita = document.getElementById('btnAgregarCita');
+    const modal = document.getElementById('modalCita');
+    const cerrarModal = document.getElementById('cerrarModal');
+    const cerrarBtn = document.getElementById('cerrarBtn');
+    const formCita = document.getElementById('formCita');
+    const citasContainer = document.getElementById('citasContainer');
+    const inputBusqueda = document.getElementById('inputBusqueda');
+
+    let editandoCard = null;
+
+    // Abrir modal
+    btnAgregarCita.addEventListener('click', () => {
+      modal.classList.remove('hidden');
+      formCita.reset();
+      editandoCard = null;
+    });
+
+    // Cerrar modal
+    cerrarModal.addEventListener('click', () => modal.classList.add('hidden'));
+    cerrarBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+    // Buscar por nombre de mascota o propietario
+    inputBusqueda.addEventListener('input', () => {
+      const filtro = inputBusqueda.value.toLowerCase();
+      const cards = citasContainer.querySelectorAll('.card');
+
+      cards.forEach(card => {
+        const nombreMascota = card.querySelector('h3').textContent.toLowerCase();
+        const propietario = card.querySelectorAll('p')[0].textContent.toLowerCase();
+        card.style.display =
+          nombreMascota.includes(filtro) || propietario.includes(filtro)
+            ? 'block'
+            : 'none';
+      });
+    });
+
+    // Guardar cita
+    formCita.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const mascota = document.getElementById('nombreMascota').value;
+      const propietario = document.getElementById('nombrePropietario').value;
+      const telefono = document.getElementById('telefono').value;
+      const fecha = document.getElementById('fecha').value;
+      const hora = document.getElementById('hora').value;
+      const tipo = document.getElementById('tipoMascota').value;
+      const sintomas = document.getElementById('sintomas').value;
+      const estado = document.getElementById('estado').value;
+      const icono = tipo.toLowerCase();
+
+      const cita = {
+        mascota,
+        propietario,
+        telefono,
+        fecha,
+        hora,
+        tipo,
+        sintomas,
+        estado,
+        icono
+      };
+
+      let citasGuardadas = JSON.parse(localStorage.getItem('citas')) || []; // Obtiene las citas guardadas o un arreglo vacío
+
+      if (editandoCard) {
+        // Editar una cita existente
+        const index = citasGuardadas.findIndex(c => c.mascota === editandoCard.querySelector('h3').textContent);
+        if (index !== -1) {
+          citasGuardadas[index] = cita; // Reemplaza la cita editada
+        }
+        editandoCard.querySelector('img').src = `assets/${icono}.png`;
+        editandoCard.querySelector('h3').textContent = mascota;
+        const p = editandoCard.querySelectorAll('p');
+        p[0].innerHTML = `<strong>Propietario:</strong> ${propietario}`;
+        p[1].innerHTML = `<strong>Teléfono:</strong> ${telefono}`;
+        p[2].innerHTML = `<strong>Fecha:</strong> ${fecha} <strong>Hora:</strong> ${hora}`;
+        p[3].innerHTML = `<strong>Síntomas:</strong> ${sintomas}`;
+        const estadoSelect = editandoCard.querySelector('select');
+        estadoSelect.value = estado;
+        editandoCard = null;
+        modal.classList.add('hidden');
+        formCita.reset();
+      } else {
+        // Crear nueva cita
+        citasGuardadas.push(cita); // Agrega la nueva cita al arreglo
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.innerHTML = `
+          <img src="assets/${icono}.png" alt="${tipo}" class="icono-mascota" />
+          <h3>${mascota}</h3>
+          <p><strong>Propietario:</strong> ${propietario}</p>
+          <p><strong>Teléfono:</strong> ${telefono}</p>
+          <p><strong>Fecha:</strong> ${fecha} <strong>Hora:</strong> ${hora}</p>
+          <p><strong>Síntomas:</strong> ${sintomas}</p>
+          <select disabled>
+            <option ${estado === 'Abierta' ? 'selected' : ''}>Abierta</option>
+            <option ${estado === 'Terminada' ? 'selected' : ''}>Terminada</option>
+            <option ${estado === 'Anulada' ? 'selected' : ''}>Anulada</option>
+          </select>
+          <div class="acciones">
+            <button class="editar-btn">✏️</button>
+            <button class="eliminar-btn">❌</button>
+          </div>
+        `;
+        
+        card.querySelector('.eliminar-btn').addEventListener('click', () => {
+          const confirmar = confirm('¿Estás seguro de eliminar esta cita?');
+          if (confirmar) {
+            citasGuardadas = citasGuardadas.filter(c => c.mascota !== mascota); // Elimina la cita del arreglo
+            localStorage.setItem('citas', JSON.stringify(citasGuardadas)); // Actualiza el localStorage
+            card.remove();
+          }
+        });
+
+        card.querySelector('.editar-btn').addEventListener('click', () => {
+          document.getElementById('nombreMascota').value = mascota;
+          document.getElementById('nombrePropietario').value = propietario;
+          document.getElementById('telefono').value = telefono;
+          document.getElementById('fecha').value = fecha;
+          document.getElementById('hora').value = hora;
+          document.getElementById('tipoMascota').value = tipo;
+          document.getElementById('sintomas').value = sintomas;
+          document.getElementById('estado').value = estado;
+          editandoCard = card;
+          modal.classList.remove('hidden');
+        });
+
+        citasContainer.prepend(card);
+      }
+
+      localStorage.setItem('citas', JSON.stringify(citasGuardadas)); // Guarda el arreglo actualizado de citas en el localStorage
+      formCita.reset();
+      modal.classList.add('hidden');
+    });
+
+    // Leer citas guardadas y mostrarlas al cargar la página
+    window.addEventListener('load', () => {
+      let citasGuardadas = JSON.parse(localStorage.getItem('citas')) || []; // Obtener las citas guardadas
+
+      citasGuardadas.forEach(cita => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.innerHTML = `
+          <img src="assets/${cita.icono}.png" alt="${cita.tipo}" class="icono-mascota" />
+          <h3>${cita.mascota}</h3>
+          <p><strong>Propietario:</strong> ${cita.propietario}</p>
+          <p><strong>Teléfono:</strong> ${cita.telefono}</p>
+          <p><strong>Fecha:</strong> ${cita.fecha} <strong>Hora:</strong> ${cita.hora}</p>
+          <p><strong>Síntomas:</strong> ${cita.sintomas}</p>
+          <select disabled>
+            <option ${cita.estado === 'Abierta' ? 'selected' : ''}>Abierta</option>
+            <option ${cita.estado === 'Terminada' ? 'selected' : ''}>Terminada</option>
+            <option ${cita.estado === 'Anulada' ? 'selected' : ''}>Anulada</option>
+          </select>
+          <div class="acciones">
+            <button class="editar-btn">✏️</button>
+            <button class="eliminar-btn">❌</button>
+          </div>
+        `;
+        
+        card.querySelector('.eliminar-btn').addEventListener('click', () => {
+          const confirmar = confirm('¿Estás seguro de eliminar esta cita?');
+          if (confirmar) {
+            citasGuardadas = citasGuardadas.filter(c => c.mascota !== cita.mascota); // Elimina la cita del arreglo
+            localStorage.setItem('citas', JSON.stringify(citasGuardadas)); // Actualiza el localStorage
+            card.remove();
+          }
+        });
+
+        card.querySelector('.editar-btn').addEventListener('click', () => {
+          document.getElementById('nombreMascota').value = cita.mascota;
+          document.getElementById('nombrePropietario').value = cita.propietario;
+          document.getElementById('telefono').value = cita.telefono;
+          document.getElementById('fecha').value = cita.fecha;
+          document.getElementById('hora').value = cita.hora;
+          document.getElementById('tipoMascota').value = cita.tipo;
+          document.getElementById('sintomas').value = cita.sintomas;
+          document.getElementById('estado').value = cita.estado;
+          editandoCard = card;
+          modal.classList.remove('hidden');
+        });
+
+        citasContainer.prepend(card);
+      });
+    });
+  </script>
+
+</body>
+</html>
